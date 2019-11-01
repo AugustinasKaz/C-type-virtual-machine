@@ -9,8 +9,11 @@ typedef struct{
 }command;
 
 int running=true;
+int ieof_flag=0;
 
 void decode(command*arg_pc, char *duom,long duom_size);
+command *fetch1(command *arg_pc);
+command *fetch2(command *arg_pc);
 
 int main(){
     char prog_mem[256];
@@ -40,19 +43,38 @@ int main(){
            break;
     }
     fclose(fp);
+
+
     while(running){
-        decode(arg_pc, duom,duom_size);
-        arg_pc++;
-    }
-    
+        //printf("%x\n", arg_pc->code); 
+        if(arg_pc->code == 0x07){
+            arg_pc=fetch2(arg_pc);
+            decode(arg_pc, duom,duom_size);
+        }
+        else if(arg_pc->code == 0x0A && ieof_flag==1){
+            arg_pc=fetch2(arg_pc);
+            decode(arg_pc, duom,duom_size);
+        }
+        else{
+            decode(arg_pc, duom,duom_size);
+            arg_pc=fetch1(arg_pc);
+        }};   
+}
+
+command *fetch1(command *arg_pc){
+    return ++arg_pc;
+}
+
+command *fetch2(command *arg_pc){   
+    arg_pc = (command*)((char*)arg_pc+arg_pc->cop1);        
+    return arg_pc;
 }
 
 void decode(command*arg_pc,char *duom, long duom_size){
     unsigned char regs[16];
     int tmp_reg1 = arg_pc-> cop1 & 0x0f;
     int tmp_reg2 = arg_pc->cop1 & 0x0f>>4;  
-    int comm_code = arg_pc->code;
-    int ieof_flag, duom_counter=-1;
+    int comm_code = arg_pc->code, duom_counter=0;
     switch(comm_code){
         case 0x01:
             printf("INC\n");
@@ -73,13 +95,13 @@ void decode(command*arg_pc,char *duom, long duom_size){
             printf("LSR\n");
             break;
         case 0x07:
-            printf("JMP\n");
+            //printf("JMP ");
             break;
         case 0x0A:
-            printf("JFE\n");
+            //printf("JFE ");    
             break;   
         case 0x0B:
-            printf("RET\n");
+            //printf("RET ");
             running = false;
             break;  
         case 0x0C:
@@ -95,16 +117,19 @@ void decode(command*arg_pc,char *duom, long duom_size){
             printf("OR\n");
             break;
         case 0x10:
-            ++duom_counter;
+            //printf("IN ");
+            duom_counter++;
             if(duom_counter == duom_size)
                 ieof_flag = 1;
-            else    
-                regs[tmp_reg1]=duom[duom_counter];
+            else{
+                printf("%d %d\n",duom_counter,duom[duom_counter]);    
+                regs[tmp_reg1]=duom[duom_counter];   
+                duom_counter++;
+            }
             break;  
         case 0x11:
-            printf("OUT\n");
-              printf("%c ", regs[tmp_reg1]);
-            running = false;
+            //printf("OUT ");
+              //printf("%c ", regs[tmp_reg1]);
             break;
                    
     }
