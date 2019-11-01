@@ -10,10 +10,12 @@ typedef struct{
 
 int running=true;
 int ieof_flag=0;
+int duom_counter=-1;
 
 void decode(command*arg_pc, char *duom,long duom_size);
 command *fetch1(command *arg_pc);
 command *fetch2(command *arg_pc);
+int change_counter(int type);
 
 int main(){
     char prog_mem[256];
@@ -21,8 +23,8 @@ int main(){
     char *duom;
     long duom_size;
     arg_pc = (command*)prog_mem;
-    FILE *fp=fopen("file_read.bin", "rb");
-    FILE *fd=fopen("file_data.txt", "r");
+    FILE *fp=fopen("decryptor.bin", "rb");
+    FILE *fd=fopen("q1_encr.txt", "r");
     if(fp == NULL){
         printf("failed to open bin file\n");
         exit(1);
@@ -32,7 +34,7 @@ int main(){
         exit(1);
     }
     fseek(fd,0,SEEK_END);
-    duom_size=ftell(fd);
+    duom_size=ftell(fd)-1;
     rewind(fd);
     duom = (char*) malloc(sizeof(char)*duom_size);
     fread(duom, 1, duom_size,fd);
@@ -43,13 +45,15 @@ int main(){
            break;
     }
     fclose(fp);
-
-
+    //for(int i = 0; i < duom_size; i++)
+     // printf("%d", duom[i]);
+      //printf("\n");
+     // printf("\n");
     while(running){
-        //printf("%x\n", arg_pc->code); 
         if(arg_pc->code == 0x07){
             arg_pc=fetch2(arg_pc);
             decode(arg_pc, duom,duom_size);
+            arg_pc=fetch1(arg_pc);
         }
         else if(arg_pc->code == 0x0A && ieof_flag==1){
             arg_pc=fetch2(arg_pc);
@@ -58,7 +62,7 @@ int main(){
         else{
             decode(arg_pc, duom,duom_size);
             arg_pc=fetch1(arg_pc);
-        }};   
+        }}; 
 }
 
 command *fetch1(command *arg_pc){
@@ -69,12 +73,20 @@ command *fetch2(command *arg_pc){
     arg_pc = (command*)((char*)arg_pc+arg_pc->cop1);        
     return arg_pc;
 }
+int change_counter(int type){
+    if(type == true){
+        duom_counter = ++duom_counter;
+        return duom_counter;
+    }
+    else
+        return duom_counter;
+}
 
 void decode(command*arg_pc,char *duom, long duom_size){
     unsigned char regs[16];
     int tmp_reg1 = arg_pc-> cop1 & 0x0f;
     int tmp_reg2 = arg_pc->cop1 & 0x0f>>4;  
-    int comm_code = arg_pc->code, duom_counter=0;
+    int comm_code = arg_pc->code;
     switch(comm_code){
         case 0x01:
             printf("INC\n");
@@ -87,49 +99,60 @@ void decode(command*arg_pc,char *duom, long duom_size){
             break;
         case 0x04:
             printf("MOVC\n");
+            regs[0]=arg_pc->cop1;
             break;
         case 0x05:
-            printf("LSL\n");
+            printf("LSL ");
+            printf("-%d\n", regs[tmp_reg1]);
+            regs[tmp_reg1] = regs[tmp_reg1]<<1;
             break;
         case 0x06:
             printf("LSR\n");
             break;
         case 0x07:
-            //printf("JMP ");
+            printf("JMP\n");
             break;
         case 0x0A:
-            //printf("JFE ");    
+            printf("JFE\n");    
             break;   
         case 0x0B:
-            //printf("RET ");
+            printf("RET\n");
             running = false;
             break;  
         case 0x0C:
             printf("ADD\n");
             break;  
         case 0x0D:
-            printf("SUB\n");
+            printf("SUB ");
+            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
+            regs[tmp_reg1] = regs[tmp_reg1]-regs[tmp_reg2];
             break;
         case 0x0E:
-            printf("XOR\n");
+            printf("XOR ");
+            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
+            regs[tmp_reg1] = regs[tmp_reg1]^regs[tmp_reg2];
             break;
         case 0x0F:
-            printf("OR\n");
+            printf("OR ");
+            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
+            regs[tmp_reg1] = regs[tmp_reg1]|regs[tmp_reg2];
             break;
         case 0x10:
-            //printf("IN ");
-            duom_counter++;
-            if(duom_counter == duom_size)
+        {
+            printf("IN ");
+            change_counter(true);
+            if(change_counter(false) > duom_size)
                 ieof_flag = 1;
-            else{
-                printf("%d %d\n",duom_counter,duom[duom_counter]);    
-                regs[tmp_reg1]=duom[duom_counter];   
-                duom_counter++;
+            else{  
+                regs[tmp_reg1]=duom[change_counter(false)];  
+                printf("%d\n", regs[tmp_reg1]); 
             }
+        }
             break;  
         case 0x11:
-            //printf("OUT ");
-              //printf("%c ", regs[tmp_reg1]);
+            running=false;
+            printf("OUT ");
+            printf("%c\n", regs[tmp_reg1]);
             break;
                    
     }
