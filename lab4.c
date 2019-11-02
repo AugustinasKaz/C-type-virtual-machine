@@ -103,8 +103,9 @@ void decode(command*arg_pc,char *duom, long duom_size){
             break;
         case 0x05:
             printf("LSL ");
-            printf("-%d\n", regs[tmp_reg1]);
+            printf("%d ", regs[tmp_reg1]);
             regs[tmp_reg1] = regs[tmp_reg1]<<1;
+            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x06:
             printf("LSR\n");
@@ -124,18 +125,21 @@ void decode(command*arg_pc,char *duom, long duom_size){
             break;  
         case 0x0D:
             printf("SUB ");
-            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
+            printf("%d %d ", regs[tmp_reg1],regs[tmp_reg2]);
             regs[tmp_reg1] = regs[tmp_reg1]-regs[tmp_reg2];
+            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x0E:
             printf("XOR ");
-            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
+            printf("%d %d ", regs[tmp_reg1],regs[tmp_reg2]);
             regs[tmp_reg1] = regs[tmp_reg1]^regs[tmp_reg2];
+            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x0F:
             printf("OR ");
-            printf("%d %d\n", regs[tmp_reg1],regs[tmp_reg2]);
-            regs[tmp_reg1] = regs[tmp_reg1]|regs[tmp_reg2];
+            printf("%d %d ", regs[tmp_reg1]<<1,regs[tmp_reg2]);
+            regs[tmp_reg1] = regs[tmp_reg1]<<1|regs[tmp_reg2];
+            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x10:
         {
@@ -152,7 +156,7 @@ void decode(command*arg_pc,char *duom, long duom_size){
         case 0x11:
             running=false;
             printf("OUT ");
-            printf("%c\n", regs[tmp_reg1]);
+            printf("%d\n", regs[tmp_reg1]);
             break;
                    
     }
