@@ -16,6 +16,7 @@ void decode(command*arg_pc, char *duom,long duom_size);
 command *fetch1(command *arg_pc);
 command *fetch2(command *arg_pc);
 int change_counter(int type);
+void rez_file(int symbol);
 
 int main(){
     char prog_mem[256];
@@ -45,10 +46,6 @@ int main(){
            break;
     }
     fclose(fp);
-    //for(int i = 0; i < duom_size; i++)
-     // printf("%d", duom[i]);
-      //printf("\n");
-     // printf("\n");
     while(running){
         if(arg_pc->code == 0x07){
             arg_pc=fetch2(arg_pc);
@@ -98,66 +95,68 @@ void decode(command*arg_pc,char *duom, long duom_size){
             printf("MOV\n");
             break;
         case 0x04:
-            printf("MOVC\n");
+           // printf("MOVC\n");
             regs[0]=arg_pc->cop1;
             break;
         case 0x05:
-            printf("LSL ");
-            printf("%d ", regs[tmp_reg1]);
+            //printf("LSL ");
             regs[tmp_reg1] = regs[tmp_reg1]<<1;
-            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x06:
-            printf("LSR\n");
+            //printf("LSR\n");
             break;
         case 0x07:
-            printf("JMP\n");
+            //printf("JMP\n");
             break;
         case 0x0A:
-            printf("JFE\n");    
+            //printf("JFE\n");    
             break;   
         case 0x0B:
-            printf("RET\n");
+            //printf("RET\n");
+            printf("program result saved in v_machine_rez.txt\n");
             running = false;
             break;  
         case 0x0C:
             printf("ADD\n");
             break;  
         case 0x0D:
-            printf("SUB ");
-            printf("%d %d ", regs[tmp_reg1],regs[tmp_reg2]);
+            //printf("SUB ");
             regs[tmp_reg1] = regs[tmp_reg1]-regs[tmp_reg2];
-            printf("rez-%d\n", regs[tmp_reg1]);
             break;
         case 0x0E:
-            printf("XOR ");
-            printf("%d %d ", regs[tmp_reg1],regs[tmp_reg2]);
-            regs[tmp_reg1] = regs[tmp_reg1]^regs[tmp_reg2];
-            printf("rez-%d\n", regs[tmp_reg1]);
+            //printf("XOR ");
+            regs[tmp_reg1] = regs[tmp_reg1]^regs[tmp_reg2+1];
             break;
         case 0x0F:
-            printf("OR ");
-            printf("%d %d ", regs[tmp_reg1]<<1,regs[tmp_reg2]);
-            regs[tmp_reg1] = regs[tmp_reg1]<<1|regs[tmp_reg2];
-            printf("rez-%d\n", regs[tmp_reg1]);
+            //printf("OR ");
+            regs[tmp_reg1] = regs[tmp_reg1]|regs[tmp_reg2+3];
             break;
         case 0x10:
         {
-            printf("IN ");
+            //printf("IN ");
             change_counter(true);
             if(change_counter(false) > duom_size)
                 ieof_flag = 1;
             else{  
-                regs[tmp_reg1]=duom[change_counter(false)];  
-                printf("%d\n", regs[tmp_reg1]); 
+                regs[tmp_reg1]=duom[change_counter(false)];   
             }
         }
             break;  
         case 0x11:
-            running=false;
-            printf("OUT ");
-            printf("%d\n", regs[tmp_reg1]);
+            //printf("OUT ");
+            rez_file(regs[tmp_reg1]);
             break;
                    
     }
+}
+
+void rez_file(int symbol){
+    FILE *rf=fopen("v_machine_rez.txt", "a");
+    if(rf == NULL){
+        perror("error");
+        printf("failed to open rez file\n");
+        exit(1);
+    }
+    fprintf(rf,"%c", symbol);
+    fclose(rf);
 }
